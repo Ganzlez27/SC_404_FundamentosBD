@@ -972,15 +972,15 @@ BEGIN
 END
 
 
---Trigger #2: Para calcular subtotal del detalle de los pedidos
+--Trigger #2: Para restringir cambios a las facturas
 
-CREATE TRIGGER SubtotalDetallePedido
-ON Detalles_Pedido
-BEFORE INSERT
+CREATE TRIGGER RestringirCambiosFacturas
+ON Facturas
+INSTEAD OF UPDATE, DELETE
 AS
 BEGIN
-    UPDATE inserted
-    SET subtotal = cantidad * precio_unitario;
+    RAISERROR('No se permiten cambios en la factura.', 16, 1);
+    ROLLBACK TRANSACTION;
 END;
 GO
 
