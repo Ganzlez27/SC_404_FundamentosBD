@@ -971,26 +971,32 @@ BEGIN
     END
 END
 
-
---Trigger #2: Para restringir cambios a las facturas
+--Trigger #2: Para restringir cambios a facturas
 
 CREATE TRIGGER RestringirCambiosFacturas
 ON Facturas
-INSTEAD OF UPDATE, DELETE
+AFTER UPDATE
 AS
 BEGIN
-    RAISERROR('No se permiten cambios en la factura.', 16, 1);
+    RAISERROR('No se permiten modificaciones a las facturas.', 16, 1);
     ROLLBACK TRANSACTION;
 END;
 GO
 
 --Trigger #3 Calcular total
 CREATE TRIGGER CALCULAR_TOTAL
-AFTER INSERT ON Detalles_Pedido
-FOR EACH ROW
+ON Detalles_Pedido
+AFTER INSERT
+AS
 BEGIN
-    DECLARE @total DECIMAL(10,2)
-    SELECT @total = SUM(subtotal) FROM Detalles_Pedido WHERE id_pedido = new.id_pedido
+    SET NOCOUNT ON;
 
-    UPDATE Pedidos SET total = @total WHERE id_pedido = new.id_pedido
-END
+    UPDATE Pedidos
+    SET total = (
+        SELECT SUM(subtotal)
+        FROM Detalles_Pedido
+        WHERE Detalles_Pedido.id_pedido = Pedidos.id_pedido
+    )
+    WHERE id_pedido IN (SELECT DISTINCT id_pedido FROM inserted);
+END;
+GO
